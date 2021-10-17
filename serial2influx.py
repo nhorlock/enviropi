@@ -5,6 +5,7 @@ import sys
 import datetime
 import json
 from influxdb import InfluxDBClient
+from w1thermsensor import W1ThermSensor
 
 dbhost = "babbage.local"
 port   = 8086
@@ -17,6 +18,8 @@ ser = serial.Serial('/dev/ttyACM0',9600)
 # Create the InfluxDB client object
 store = InfluxDBClient(dbhost, port, user, pw, dbname)
 #location = "neil's office"
+therm = W1ThermSensor()
+
 location = "driveway"
 device = "enviro+ arduino"
 measurement = "environmental"
@@ -29,7 +32,9 @@ while True:
 #        print("read: {}".format(read_serial))
         if collecting:
             if read_serial == "END":
+                real_temp = therm.get_temperature()
                 collecting = False
+                readings["real_temp"]=real_temp
                 row = [ { "measurement":measurement,
                             "tags": { 
                                 "location":location,
