@@ -146,16 +146,19 @@ while True:
         if pms5003 is not None:
             # take readings
             pms_reading = pms5003.read()
-            readings["pm1"] = pms_reading.data[0] # uncomment to enable PM1.0 measuring
+            readings["pm1"] = pms_reading.data[0]
             readings["pm2"] = pms_reading.data[1]
             readings["pm10"] = pms_reading.data[2]
+            readings["pm1_atmos"] = pms_reading.data[0]
+            readings["pm2_atmos"] = pms_reading.data[1]
+            readings["pm10_atmos"] = pms_reading.data[2]
         print("BEGIN")
         for k in readings.keys():
             print("{}={}".format(k, readings[k]))
         print("END")
-                        # record the time that this reading was taken
-        # Draw a label
+        # record the time that this reading was taken
         last_reading = time.monotonic()
+        # Draw a label
         text = "upd:{}".format(last_reading)
         text_area = label.Label(terminalio.FONT, text=text, color=0xFFFF00, x=30, y=64)
         splash[-1] = text_area
