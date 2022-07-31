@@ -21,6 +21,12 @@ user   = ""
 pw     = ""
 dbname = ""
 
+luftdaten_update_frequency = 60
+packets_global_update_frequency = 10
+local_update_frequency = 5
+luftdaten_send_time = 0
+packets_global_send_time = 0
+
 last_renewal = 0
 token = None
 
@@ -139,6 +145,15 @@ def send_to_luftdaten(values, id):
         "humidity":"humidity",
         "pressure":"pressure"}
 
+    global luftdaten_send_time
+
+    now = time.monotonic()
+
+    if now < luftdaten_send_time + luftdaten_update_frequency:
+        return
+    
+    luftdaten_send_time = now
+
     pm_values = dict(i for i in values.items() if i[0] in ["pm1","pm2", "pm10"])
     temp_values = dict(i for i in values.items() if i[0] in ["humidity", "pressure", "real_temp"])
 
@@ -196,16 +211,27 @@ def send_to_luftdaten(values, id):
 
 def send_to_iotpackets(values):
     global token
-    url =  get_iot_url()
-    logging.info("Sending AQ data to {}".format(url))
+    global packets_global_send_time
+
+    now = time.monotonic()
+
+    if now < packets_global_send_time + packets_global_update_frequency:
+        return
+    
+    packets_global_send_time = now
+
+    url =  get_iot_url() + "collector/environment"
+    logging.debug("Sending AQ data to {}".format(url))
     check_token_and_renew()
     headers = {'content-type': 'application/json'}
+    location = { 'latitude': 51.15795109905, 'longitude': 0.88059872389}
 
     data = dict()
     data['token'] = token
 
     field_map = { 
         "real_temp":"temperature",
+        "ucontroller_cpu_temp":"cpu_temperature",
         "humidity":"humidity",
         "pressure":"pressure",
         "OX_raw":"oxidising",
