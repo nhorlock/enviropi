@@ -67,11 +67,10 @@ def write_token(token_data):
         f = open(token_file, "x")
         f.write(token_data)
         f.close()
-        logging.info("Token written to " + token_file)
-    token = token_data
-
+        logging.debug("Token written to " + token_file)
+    token = json.loads(token_data)
 def token_request(iot_user, iot_pw, iot_serial_number):
-    logging.info("token_request({},{},{})".format(iot_user, iot_pw, iot_serial_number))
+    logging.debug("token_request({},{},{})".format(iot_user, iot_pw, iot_serial_number))
     headers = {'content-type': 'application/json'}
     data = dict()
     data['username'] = iot_user
@@ -79,13 +78,18 @@ def token_request(iot_user, iot_pw, iot_serial_number):
     data['serialNumber'] = iot_serial_number
 
     token_api = get_iot_url() + 'token/request'
-    request = requests.post(token_api, data=json.dumps(data), headers=headers, verify=False,
+    request = requests.post(token_api, json=data, headers=headers, verify=False,
                           allow_redirects=False)
     response = request.text
-    logging.debug("IOT Token Req: {url} {req}->{resp}".format(url=token_api, req=data, resp=response))
+    if len(response) > 0:
+        text = json.dumps(json.loads(response), sort_keys=True, indent=4)
+    else:
+        text = "Empty response"
+    logging.debug("IOT Token Req: {url} {req}->{resp}".format(url=token_api, req=data, resp=text))
+
 
     if request.status_code == 200:
-        logging.info("iot token request succeeded with {}".format(response))    
+        logging.debug("iot token request succeeded with {}".format(response))    
         write_token(response)
     else:
         logging.warning("iot token request failed with {}".format(response))    
@@ -100,14 +104,19 @@ def token_renew():
     renew_api = get_iot_url() + 'token/renew'
     request = requests.put(
                 renew_api, 
-                data=json.dumps(data),
+                json=data,
                 headers=headers, verify=False,
                 allow_redirects=False)
     response = request.text
-    logging.debug("IOT Token Renew: {url} {req}->{resp}".format(url=renew_api, req=data, resp=response))
+    if len(response) > 0:
+        text = json.dumps(json.loads(response), sort_keys=True, indent=4)
+    else:
+        text = "Empty response"
+
+    logging.debug("IOT Token Renew: {url} {req}->{resp}".format(url=renew_api, req=data, resp=text))
 
     if request.status_code == 200:
-        logging.info("IOT token renew: OK - {}")
+        logging.debug("IOT token renew: OK - {}")
     else:
         logging.warning("IOT token renew: {}".format(response))
 
@@ -116,10 +125,10 @@ def check_token_and_renew(force_renew=False):
     global last_renewal
     global token
     logging.debug("check_token_and_renew(force_renew={})".format(force_renew))
-    renewal_period = 10
+    renewal_period = 25
     try:
         if force_renew:
-            logging.info("Ignoring token on disk. requesting new token")
+            logging.debug("Ignoring token on disk. requesting new token")
             if token_request("pete@packets.global", "foo123", get_serial_string(full=True)):
                 last_renewal = time.monotonic()
             else:
@@ -129,11 +138,11 @@ def check_token_and_renew(force_renew=False):
         logging.error("Token read failed")
 
     if time.monotonic() > last_renewal + renewal_period :
-        logging.info("Need to renew token")
+        logging.debug("Need to renew token")
         token_renew()
         last_renewal = time.monotonic()
     else:
-        logging.info("Token still valid {}".format(token))
+        logging.debug("Token still valid {}".format(token))
 
 
 def send_to_luftdaten(values, id):
@@ -266,10 +275,17 @@ def send_to_iotpackets(values):
     except Exception as e:
         logging.error('iot.packets.global Unexpected Error: {}'.format(e))
 
-    logging.debug("Resp from {} : {}".format(url,resp.text))
     if resp.ok:
+        logging.debug("Resp OK from {} : {}".format(url,json.dumps(json.loads(resp.text), sort_keys=True, indent=4)))
         return True
     else:
+        if resp.status_code == 401:
+            check_token_and_renew(force_renew=True)
+        if len(resp.text) > 0:
+            text = json.dumps(json.loads(resp.text), sort_keys=True, indent=4)
+        else:
+            text = "Empty response"
+        logging.warning("Response NOTOK from {} : {}".format(url,text))
         return False    
 
 def send_data_to_influx(store, row):
