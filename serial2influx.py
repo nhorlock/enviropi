@@ -171,6 +171,7 @@ def send_to_luftdaten(values, id):
     temp_values_json = [{"value_type": luft_map[key], "value": val}
                         for key, val in temp_values.items()]
 
+    logging.debug("Sending AQ data to {}".format("luftdaten"))
     try:   
         resp_1 = requests.post(
             "https://api.luftdaten.info/v1/push-sensor-data/",
@@ -191,6 +192,8 @@ def send_to_luftdaten(values, id):
         logging.warning('Sensor.Community (Luftdaten) PM Timeout Error: {}'.format(e))
     except requests.exceptions.RequestException as e:
         logging.warning('Sensor.Community (Luftdaten) PM Request Error: {}'.format(e))
+    except Exception as e:
+        logging.warning('Sensor.Community (Luftdaten) Unexpected Request Error: {}'.format(e))
 
     try:
         resp_2 = requests.post(
@@ -212,6 +215,8 @@ def send_to_luftdaten(values, id):
         logging.warning('Sensor.Community (Luftdaten) TMP Timeout Error: {}'.format(e))
     except requests.exceptions.RequestException as e:
         logging.warning('Sensor.Community (Luftdaten) TMP Request Error: {}'.format(e))
+    except Exception as e:
+        logging.warning('Sensor.Community (Luftdaten) Unexpected Request Error: {}'.format(e))
 
     if resp_1.ok and resp_2.ok:
         return True
@@ -255,13 +260,15 @@ def send_to_iotpackets(values):
         "lux":"lux",
     }
     iot_data  = dict((field_map[k], v) for (k, v) in values.items() if k in field_map.keys())
+    data['coordinate_data'] = location
     data['environment_data'] = iot_data
+
 
     logging.debug("IOT: sending to {} with {}".format(url,data))
     try:   
         resp = requests.post(
-            url + "collector/environment",
-            data=json.dumps(data),
+            url,
+            json=data,
             headers=headers,
             verify=False,
             allow_redirects=False
@@ -306,7 +313,7 @@ def send_data_to_influx(store, row):
 logging.basicConfig(
     filename="enviropi.log",
     format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
-    level=logging.DEBUG,
+    level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')
     
 parser = argparse.ArgumentParser(description='Read data from arduino and send to store')
