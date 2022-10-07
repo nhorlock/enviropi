@@ -37,7 +37,8 @@ You can also enable adaptive data rate (ADR), the network will then be able to a
 Cayenne LPP suggests that a payload can safely be sent consisting of up to 51 bytes. However, this would appear to depend on the LORA network setup which has the ability to restrict this as low as 11 bytes.
 ```
 Depending on the LoRa frequency plan and data rate used, the maximum payload varies. 
-It’s safe to send up to 51 bytes of payload.```
+It’s safe to send up to 51 bytes of payload.
+```
 
 [More details on LORA networking and Cayenne](https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload)
 
