@@ -42,3 +42,12 @@ It’s safe to send up to 51 bytes of payload.
 
 [More details on LORA networking and Cayenne](https://developers.mydevices.com/cayenne/docs/lora/#lora-cayenne-low-power-payload)
 
+### Compressing the data
+Given an 80-byte potential payload we need to consider how to compress the data in a time and energy efficient manner. A number of options exist.
+* Cayenne LPP has a range of data types though does not have explicit support for particulate data. The [main reference implementation](https://github.com/myDevicesIoT/CayenneLPP) is in C/C++ but a [python port](https://pypi.org/project/pycayennelpp/) appears to be active.
+* Context aware encoding - Similar to known schemes such as FIX FAST, we can use a presence map to indicate data being updated, and use relative encoding to send movements, rather than absolutes.
+* lzh deflate - widely supported, but may have a high energy cost, TBD
+
+The aim should be to establish the smallest possible packet profile as this allows operation over free public networks (the slowest LORA links can be 250 bits/s), moreover the smaller the packet the less time the radio is powered on and the longer the batteries will last.
+
+
